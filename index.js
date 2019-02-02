@@ -1,10 +1,5 @@
-const request = require("request");
-
-const command_path = "/cgi-bin/directsend?";
-
-const query_path = "/cgi-bin/json_query?jsoncallback=";
-
-const timeout = 5000;
+var pjlink = require('pjlink');
+const util = require('util');
 
 const debug = false;
 
@@ -14,72 +9,96 @@ var Characteristic;
 module.exports = function (homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
-    homebridge.registerAccessory("homebridge-epson-projector", "EpsonProjector", EpsonProjector);
+    homebridge.registerAccessory("homebridge-projector-pjlink", "PJLinkProjector",
+				 PJLinkProjector);
 };
 
-
-function EpsonProjector(log, config) {
+function PJLinkProjector(log, config) {
     this.log = log;
     this.ip = config["ip"];
-    this.model = config["model"] === undefined ? "" : config["model"];
-    this.serial = config["serial"] === undefined ? "" : config["serial"];
-    this.name = config["name"];
+    this.serial = config["serial"] || "";
+    this.poll = config["poll"] === true;
+    this.interval = parseInt(config["interval"] || 15,10);
+    this.beamer=new pjlink(this.ip);
+    
+    this.readProjectorDetails=async function () {
+	this.log("Reading Projector Details...");
+	const getMan=util.promisify(this.beamer.getManufacturer.bind(this.beamer));
+	try {
+	    this.manufacturer=await getMan();
+	} catch(err) {
+	    this.manufacturer='';
+	}
+	this.log("Got Manufacturer: "+this.manufacturer);
+
+	const getModel=util.promisify(this.beamer.getModel.bind(this.beamer));
+	try {
+	    this.model=await getModel();
+	} catch(err) {
+	    this.model='';
+	}
+	this.log("Got Model: "+this.model);
+
+	if (config["name"]) {
+	    this.name=config["name"];
+	} else {
+	    try {
+		const getName=util.promisify(this.beamer.getName.bind(this.beamer));
+		this.name=await getName();
+	    } catch(err) {
+		this.name="PJLinkProjector";
+	    }
+	}
+	this.log("Got Name: "+this.name);
+    };
+    this.readProjectorDetails()
+	.then(() => {this.log("Finished Initializing")})
+	.catch(this.log);
 }
 
-EpsonProjector.prototype = {
 
+PJLinkProjector.prototype = {
     getPowerState: function (callback) {
-        if (debug) {
-            console.log(error);
-        }
-        request.get({
-            uri: "http://" + this.ip + query_path + "PWR?",
-            headers: {
-                "Referer": "http://" + this.ip + "/cgi-bin/webconf",
-            },
-            timeout: timeout
-        }, function (error, response, body) {
-            if (error !== null) {
+	this.beamer.getPowerState((error,state) => {
+            if (error) {
                 callback(error);
-                return;
-            }
-            try {
-                callback(null, JSON.parse(body)["projector"]["feature"]["reply"] === "01")
-            } catch (error) {
-                callback(error);
-            }
-        });
+		return;
+	    }
+	    if (debug) {
+		this.log("Power State: ",state);
+	    }
+	    callback(null, state !== pjlink.POWER.OFF);
+	});
     },
 
     setPowerState: function(powerOn, callback) {
-        let command;
-        if (powerOn) {
-            command = "PWR=ON";
-        } else {
-            command = "PWR=OFF";
-        }
-        if (debug) {
-            console.log(error);
-        }
-        request.get({
-            uri: "http://" + this.ip + command_path + command,
-            headers: {
-                "Referer": "http://" + this.ip + "/cgi-bin/webconf",
-            },
-            timeout: timeout
-        }, function (error, response, body) {
-            if (debug) {
-                console.log(error);
-            }
-            callback();
-        });
+	if(debug)
+	    this.log("Setting power state to: "+powerOn);
+	this.beamer.setPowerState(powerOn?pjlink.POWER.ON:pjlink.POWER.OFF,callback);
+    },
+
+    pollPowerState: function() {
+        clearTimeout(this.pollingTimeOut);
+	this.getPowerState(
+	    (error,value) => {
+		if (debug && error) {
+			this.log("Error encountered while polling state: ",error)
+		}
+		this.pollingTimeOut = setTimeout(
+		    this.pollPowerState.bind(this),
+		    this.interval * 1000);
+		if(!error) {
+		    this.switchService.getCharacteristic(Characteristic.On).
+			updateValue(value);
+		}
+	    });
+	
     },
 
     getServices: function () {
         const informationService = new Service.AccessoryInformation();
-
         informationService
-            .setCharacteristic(Characteristic.Manufacturer, "EPSON")
+            .setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
             .setCharacteristic(Characteristic.Model, this.model)
             .setCharacteristic(Characteristic.SerialNumber, this.serial);
 
@@ -91,6 +110,9 @@ EpsonProjector.prototype = {
 
         this.informationService = informationService;
         this.switchService = switchService;
+	if (this.poll) {
+	    this.pollPowerState();
+	}
         return [informationService, switchService];
     }
 };

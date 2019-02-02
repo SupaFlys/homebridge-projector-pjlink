@@ -7,10 +7,12 @@
   },
   "accessories": [
     {
-      "accessory": "homebridge-epson-projector.EpsonProjector",
-      "name": "Projector",
-      "ip": "192.168.144.128"
+	"accessory": "PJLinkProjector"
+	"name": "MyProjector",
+	"ip": "192.168.0.2",
+	"poll": true,
+	"interval": 20
     }
   ],
-  "description": "This is an example configuration file with one fake accessory. You can use this as a template for creating your own configuration file containing devices you actually own."
+  "description": "This is an example configuration file with one fake PJLink projector accessory."
 }

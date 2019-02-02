@@ -1,25 +1,25 @@
 {
-  "name": "homebridge-epson-projector",
-  "version": "0.0.2",
-  "author": "Jackie Yang",
-  "description": "EPSON Projector automation, via Homebridge for the impatient.",
+  "name": "homebridge-projector-pjlink",
+  "version": "0.0.1",
+  "author": "JD Smith",
+  "description": "Generic PJLink Projector automation for homebridge.",
   "license": "MIT",
   "keywords": [
     "homebridge-plugin",
-    "epson-projector"
+    "pjlink-projector"
   ],
   "dependencies": {
-    "request": "2.83.0"
+    "pjlink": ">=0.2.4"
   },
   "engines": {
     "homebridge": ">=0.4.0"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/valkjsaaa/homebridge-epson-projector.git"
+    "url": "git+https://github.com/jdtsmith/homebridge-projector-pjlink.git"
   },
   "bugs": {
-    "url": "https://github.com/valkjsaaa/homebridge-epson-projector/issues"
+    "url": "https://github.com/jdtsmith/homebridge-projector-pjlink/issues"
   },
-  "homepage": "https://github.com/valkjsaaa/homebridge-epson-projector"
+  "homepage": "https://github.com/jdtsmith/homebridge-projector-pjlink"
 }
