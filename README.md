@@ -1,6 +1,6 @@
 ## A Homebridge plugin for controlling PJLink-based projectors 
 
-This allows controlling projectors which support for the simple [PJLink protocol](https://pjlink.jbmia.or.jp/english/).  A configuration example:
+This plugin allows controlling projectors which support the simple [PJLink protocol](https://pjlink.jbmia.or.jp/english/).  A configuration example:
 
 ```
   "accessories": [
