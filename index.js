@@ -71,10 +71,10 @@ PJLinkProjector.prototype = {
 	});
     },
 
-    lensCommand: function(powerOn, callback) {
+    lensCommand: function(lenseNum, callback) {
 	if(debug)
-	    this.log("Setting lens state to: "+powerOn);
-	this.beamer.Command('POPLP','01',callback);
+	    this.log("Setting lens state to: "+lenseNum);
+	this.beamer.Command('POPLP',lenseNum,callback);
     },
 	
     setPowerState: function(powerOn, callback) {
